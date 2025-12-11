@@ -86,11 +86,29 @@ systemctl enable httpd
 echo "<h1>Hello! This request was served from the Multi-AZ AWS Architecture.</h1>" > /var/www/html/index.html
 ```
 
-## ⚠️ Current Limitations
+## ⚠️ Current Limitations & Trade-offs
+* **Single NAT Gateway (Cost vs. Redundancy):**
+    * To reduce costs, this architecture uses a **single NAT Gateway** in one Availability Zone.
+    * *Risk:* If the AZ hosting the NAT Gateway fails, private instances in the *other* AZ will lose outbound internet access.
+    * *Production Fix:* Deploy a distinct NAT Gateway in every AZ.
 
-- **Manual Deployment ("ClickOps"):** This infrastructure was created manually via the AWS Console. This creates a risk of human error and makes replication difficult.
-- **No Load Balancer:** Currently, the web server is accessed via a direct Public IP. If this specific instance fails, the site goes down, despite the network being Multi-AZ.
-- **HTTP Only:** The web server listens on port 80 (HTTP). In a production environment, SSL/TLS (HTTPS) is required for security.
+* **Ephemeral Storage:**
+    * The web server stores data on the local EBS root volume. If the instance is terminated, any changes to the website files are lost.
+    * *Production Fix:* Offload static content to S3 or use an EFS (Elastic File System) mount.
+
+* **Security Groups (SSH):**
+    * For demonstration purposes, SSH (Port 22) might be open to `0.0.0.0/0` or a wide range.
+    * *Risk:* This exposes the server to brute-force attacks.
+    * *Production Fix:* Restrict SSH access to a specific VPN IP or use AWS Systems Manager (SSM) Session Manager instead of SSH.
+
+* **Manual Deployment ("ClickOps"):**
+    * Infrastructure was created manually via the AWS Console, increasing the risk of human error and making replication difficult.
+
+* **No Load Balancer:**
+    * The web server is accessed via a direct Public IP. If this instance fails, the site goes down, despite the network being Multi-AZ.
+
+* **HTTP Only:**
+    * Traffic is unencrypted (Port 80). Production environments require SSL/TLS (HTTPS) certificates.
 
 ## 🚀 Future Roadmap
 
