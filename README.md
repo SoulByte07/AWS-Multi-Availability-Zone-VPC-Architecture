@@ -74,41 +74,40 @@ Launch an EC2 instance in the **Public Subnet** and use the following **User Dat
 
 ```bash
 #!/bin/bash
-# Update the system
-yum update -y
-
-# Install and start Apache Web Server
-yum install -y httpd
-systemctl start httpd
-systemctl enable httpd
-
-# Create a custom landing page
-echo "<h1>Hello! This request was served from the Multi-AZ AWS Architecture.</h1>" > /var/www/html/index.html
+# Install Apache Web Server and PHP
+dnf install -y httpd wget php mariadb105-server
+# Download Lab files
+wget https://aws-tc-largeobjects.s3.us-west-2.amazonaws.com/CUR-TF-100-ACCLFO-2/2-lab2-vpc/s3/lab-app.zip
+unzip lab-app.zip -d /var/www/html/
+# Turn on web server
+chkconfig httpd on
+service httpd start
 ```
 
 ## ⚠️ Current Limitations & Trade-offs
-* **Single NAT Gateway (Cost vs. Redundancy):**
-    * To reduce costs, this architecture uses a **single NAT Gateway** in one Availability Zone.
-    * *Risk:* If the AZ hosting the NAT Gateway fails, private instances in the *other* AZ will lose outbound internet access.
-    * *Production Fix:* Deploy a distinct NAT Gateway in every AZ.
 
-* **Ephemeral Storage:**
-    * The web server stores data on the local EBS root volume. If the instance is terminated, any changes to the website files are lost.
-    * *Production Fix:* Offload static content to S3 or use an EFS (Elastic File System) mount.
+- **Single NAT Gateway (Cost vs. Redundancy):**
+  - To reduce costs, this architecture uses a **single NAT Gateway** in one Availability Zone.
+  - _Risk:_ If the AZ hosting the NAT Gateway fails, private instances in the _other_ AZ will lose outbound internet access.
+  - _Production Fix:_ Deploy a distinct NAT Gateway in every AZ.
 
-* **Security Groups (SSH):**
-    * For demonstration purposes, SSH (Port 22) might be open to `0.0.0.0/0` or a wide range.
-    * *Risk:* This exposes the server to brute-force attacks.
-    * *Production Fix:* Restrict SSH access to a specific VPN IP or use AWS Systems Manager (SSM) Session Manager instead of SSH.
+- **Ephemeral Storage:**
+  - The web server stores data on the local EBS root volume. If the instance is terminated, any changes to the website files are lost.
+  - _Production Fix:_ Offload static content to S3 or use an EFS (Elastic File System) mount.
 
-* **Manual Deployment ("ClickOps"):**
-    * Infrastructure was created manually via the AWS Console, increasing the risk of human error and making replication difficult.
+- **Security Groups (SSH):**
+  - For demonstration purposes, SSH (Port 22) might be open to `0.0.0.0/0` or a wide range.
+  - _Risk:_ This exposes the server to brute-force attacks.
+  - _Production Fix:_ Restrict SSH access to a specific VPN IP or use AWS Systems Manager (SSM) Session Manager instead of SSH.
 
-* **No Load Balancer:**
-    * The web server is accessed via a direct Public IP. If this instance fails, the site goes down, despite the network being Multi-AZ.
+- **Manual Deployment ("ClickOps"):**
+  - Infrastructure was created manually via the AWS Console, increasing the risk of human error and making replication difficult.
 
-* **HTTP Only:**
-    * Traffic is unencrypted (Port 80). Production environments require SSL/TLS (HTTPS) certificates.
+- **No Load Balancer:**
+  - The web server is accessed via a direct Public IP. If this instance fails, the site goes down, despite the network being Multi-AZ.
+
+- **HTTP Only:**
+  - Traffic is unencrypted (Port 80). Production environments require SSL/TLS (HTTPS) certificates.
 
 ## 🚀 Future Roadmap
 
