@@ -50,7 +50,7 @@ This project demonstrates a highly available, fault-tolerant network infrastruct
 ### 1. Network Setup
 
 1.  Create a VPC with IPv4 CIDR `10.0.0.0/16`.
-2.  Create 2 Public and 2 Private subnets across **us-east-1a** and **us-east-1b**.
+2.  Create 2 Public and 2 Private subnets across **ap-south-1-1a** and **ap-south-1-1b**.
 3.  Attach an **Internet Gateway (IGW)** to the VPC.
 4.  Allocate an Elastic IP and create a **NAT Gateway** in the Public Subnet.
 
