@@ -19,9 +19,13 @@ This project demonstrates a highly available, fault-tolerant network infrastruct
 
 ## 🏗️ Architecture Design
 
-### Visual Diagram
+### Visual Diagram AI
 
-> _[Insert your Architecture Diagram Image Here]_
+![Architechture desigh AI](Assets/Architechture-design/M5-sol-AI.png)
+
+### Visual Diagram Mine
+
+![Architechture Design Mine](Assets/Architechture-design/M5-soltion-mine.drawio.png)
 
 ### Network Breakdown
 
@@ -84,26 +88,72 @@ chkconfig httpd on
 service httpd start
 ```
 
+---
+
+## 📸 Proof of Work
+
+### 1. Network Configuration
+
+**VPC & Subnets Created**
+
+> _Verification of the VPC creation with distinct Public and Private subnets._
+>
+> ![VPC Setup](./Assets/ScreenShots/vpc-01.png)
+> ![Subnet List](./Assets/ScreenShots/subnets.png)
+
+**Route Table Associations**
+
+> _Ensuring public subnets are associated with the Internet Gateway route table._
+>
+> ![Route Tables](./Assets/ScreenShots/routing-table-association.png)
+
+### 2. Security & Compute
+
+**Security Group Rules**
+
+> _Inbound rules configured to allow HTTP (Port 80) from anywhere and SSH (Port 22) for administration._
+>
+> ![Security Group](./Assets/ScreenShots/security-group.png)
+
+**EC2 Instance Summary**
+
+> _The Web Server instance running in the Public Subnet with a valid Public IPv4 address._
+>
+> ![EC2 Summary](./Assets/ScreenShots/ec2-summary.png)
+
+### 3. Final Validation
+
+**Live Web Page Result**
+
+> _Successful HTTP request to the Public IP (`3.110.167.96`), serving the custom HTML page._
+>
+> ![Final Result](./Assets/ScreenShots/result.png)
+
 ## ⚠️ Current Limitations & Trade-offs
 
 - **Single NAT Gateway (Cost vs. Redundancy):**
+
   - To reduce costs, this architecture uses a **single NAT Gateway** in one Availability Zone.
   - _Risk:_ If the AZ hosting the NAT Gateway fails, private instances in the _other_ AZ will lose outbound internet access.
   - _Production Fix:_ Deploy a distinct NAT Gateway in every AZ.
 
 - **Ephemeral Storage:**
+
   - The web server stores data on the local EBS root volume. If the instance is terminated, any changes to the website files are lost.
   - _Production Fix:_ Offload static content to S3 or use an EFS (Elastic File System) mount.
 
 - **Security Groups (SSH):**
+
   - For demonstration purposes, SSH (Port 22) might be open to `0.0.0.0/0` or a wide range.
   - _Risk:_ This exposes the server to brute-force attacks.
   - _Production Fix:_ Restrict SSH access to a specific VPN IP or use AWS Systems Manager (SSM) Session Manager instead of SSH.
 
 - **Manual Deployment ("ClickOps"):**
+
   - Infrastructure was created manually via the AWS Console, increasing the risk of human error and making replication difficult.
 
 - **No Load Balancer:**
+
   - The web server is accessed via a direct Public IP. If this instance fails, the site goes down, despite the network being Multi-AZ.
 
 - **HTTP Only:**
