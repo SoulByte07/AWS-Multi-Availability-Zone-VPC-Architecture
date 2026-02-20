@@ -1,94 +1,171 @@
-# AWS Multi-Availability Zone VPC Architecture
+# ☁️ AWS Multi-Availability Zone VPC Architecture
 
-Building a resilient, "self-healing" infrastructure starts at the networking layer. This project demonstrates a **3-Tier VPC Architecture** deployed across multiple Availability Zones (AZs). By mirroring resources, we ensure that even if an entire AWS data center goes offline, the application remains highly available and secure.
+![AWS](https://img.shields.io/badge/AWS-Cloud-orange?style=flat-square&logo=amazon-aws)
+![Linux](https://img.shields.io/badge/OS-Amazon_Linux_2023-blue?style=flat-square&logo=linux)
+![Status](https://img.shields.io/badge/Status-Completed-success?style=flat-square)
 
----
+## 📖 Project Overview
 
-## ## Architecture Overview
+This project demonstrates a highly available, fault-tolerant network infrastructure deployed on AWS. The architecture is designed to support a web application with distinct **Public** and **Private** isolation across two Availability Zones (Multi-AZ).
 
-The design follows the "Gold Standard" for cloud networking: a 3-tier segmentation that separates the entry point, the logic, and the data.
+### Key Features
 
-### ### Key Features
-
-- **High Availability:** Resources are redundant across two geographic locations (e.g., `us-east-1a` and `us-east-1b`).
-    
-- **Security Isolation:** Databases are tucked away in a private "Data Tier" with no direct internet access.
-    
-- **Controlled Outbound Traffic:** Private instances can download updates via a NAT Gateway without being exposed to the public web.
-    
+- ✅ **Multi-AZ Redundancy:** Infrastructure spans two Availability Zones for high availability.
+- ✅ **Network Isolation:** Public subnets for web servers; Private subnets reserved for database/backend logic.
+- ✅ **Secure Outbound Access:** NAT Gateways configured to allow private instances to update without exposing them to the internet.
+- ✅ **Automated Configuration:** EC2 instances bootstrapped using Bash User Data scripts.
 
 ---
 
-## ## Component Differentiator
+## 🏗️ Architecture Design
 
-|**Category**|**Component**|**Purpose**|**Access Level**|
-|---|---|---|---|
-|**Public Tier**|Web Subnets|Houses Load Balancers & Bastion Hosts.|Direct Internet Access|
-|**Private Tier**|App Subnets|Where the application logic (EC2) lives.|Outbound via NAT Only|
-|**Data Tier**|DB Subnets|Strictly for Databases (RDS).|Internal VPC Access Only|
-|**Connectivity**|IGW & NAT|The "Front Door" and "One-Way Exit" for traffic.|Infrastructure Layer|
+### Visual Diagram AI
 
----
+![Architechture desigh AI](Assets/Architechture-design/M5-sol-AI.png)
 
-## ## Implementation Guide (Manual Console)
+### Visual Diagram Mine
 
-This architecture was built using the AWS Management Console to ensure a deep understanding of the underlying networking handshakes.
+![Architechture Design Mine](Assets/Architechture-design/M5-soltion-mine.drawio.png)
 
-1. **VPC Setup:** Established a `10.0.0.0/16` CIDR block (offering 65,536 IPs).
-    
-2. **Subnetting:** Created 6 subnets distributed across two AZs for maximum redundancy.
-    
-3. **Gateways:** Attached an **Internet Gateway (IGW)** for the public tier and deployed a **NAT Gateway** in a public subnet for the private tiers.
-    
-4. **Routing:**
-    
-    - **Public Route Table:** Pointed to the IGW.
-        
-    - **Private Route Table:** Pointed to the NAT Gateway.
-        
-5. **Security:** Implemented Security Groups to allow only specific traffic (e.g., Port 80/443 for Web, Port 3306 for Database).
-    
+### Network Breakdown
 
-> **Cost Optimization Tip:** While building in India (or elsewhere), remember that NAT Gateways carry an hourly charge (approx. ₹4.5/hr per gateway). For a lab environment, delete them when not in use!
+| Resource                  | CIDR / Detail                | Description                              |
+| :------------------------ | :--------------------------- | :--------------------------------------- |
+| **VPC**                   | `10.0.0.0/16`                | Main network container                   |
+| **Public Subnets**        | `10.0.1.0/24`, `10.0.3.0/24` | Hosts the Web Server (EC2)               |
+| **Private Subnets**       | `10.0.2.0/24`, `10.0.4.0/24` | Reserved for future Database/App layers  |
+| **Route Table (Public)**  | `0.0.0.0/0` → IGW            | Direct Internet Access                   |
+| **Route Table (Private)** | `0.0.0.0/0` → NAT GW         | Indirect Internet Access (Outbound only) |
 
 ---
 
-## ## Proof of Work
+## 🛠️ Tech Stack
 
-Verification is the soul of engineering. Below are the snapshots from the AWS Console confirming the successful deployment.
-
-### ### 1. Architecture Map
-
-### ### 2. Console Verification
-
-|**Subnet Distribution**|**Route Table Configuration**|
-|---|---|
-|||
+- **Cloud Provider:** Amazon Web Services (AWS)
+- **Compute:** Amazon EC2 (t2.micro / Free Tier)
+- **Networking:** VPC, Subnets, Internet Gateway, NAT Gateway
+- **OS:** Amazon Linux 2023
+- **Scripting:** Bash (for User Data)
 
 ---
 
-## ## Future Roadmap: Terraform Integration
+## ⚙️ Implementation Guide
 
-The next phase of this project is to move from "ClickOps" to **Infrastructure as Code (IaC)**. This will allow the entire environment to be version-controlled and deployed in seconds.
+### 1. Network Setup
 
-- **Phase 1: Resource Scripting** – Translate manual steps into `.tf` files.
-    
-- **Phase 2: Variables & Outputs** – Make the architecture reusable for different regions.
-    
-- **Phase 3: Remote State** – Store the architecture state in an S3 Bucket with DynamoDB locking.
-    
-- **Phase 4: Modularization** – Create a standalone "VPC Module" for future projects.
-    
+1.  Create a VPC with IPv4 CIDR `10.0.0.0/16`.
+2.  Create 2 Public and 2 Private subnets across **ap-south-1-1a** and **ap-south-1-1b**.
+3.  Attach an **Internet Gateway (IGW)** to the VPC.
+4.  Allocate an Elastic IP and create a **NAT Gateway** in the Public Subnet.
+
+### 2. Routing Configuration
+
+- **Public Route Table:** Associate public subnets and add a route to the IGW.
+- **Private Route Table:** Associate private subnets and add a route to the NAT Gateway.
+
+### 3. Security Groups
+
+**Web Server SG (Inbound Rules):**
+
+| Type | Protocol | Port | Source      | Justification            |
+| :--- | :------- | :--- | :---------- | :----------------------- |
+| HTTP | TCP      | 80   | `0.0.0.0/0` | Allow public web traffic |
+| SSH  | TCP      | 22   | `My IP`     | Secure Admin Access      |
+
+### 4. Server Launch
+
+Launch an EC2 instance in the **Public Subnet** and use the following **User Data** script to auto-configure the web server:
+
+```bash
+#!/bin/bash
+# Install Apache Web Server and PHP
+dnf install -y httpd wget php mariadb105-server
+# Download Lab files
+wget https://aws-tc-largeobjects.s3.us-west-2.amazonaws.com/CUR-TF-100-ACCLFO-2/2-lab2-vpc/s3/lab-app.zip
+unzip lab-app.zip -d /var/www/html/
+# Turn on web server
+chkconfig httpd on
+service httpd start
+```
 
 ---
 
-## ## About the Author
+## 📸 Proof of Work
 
-- **Name:** SoulByte07
-    
-- **Role:** Aspiring AWS Cloud Engineer
-    
-- **Focus:** Linux, Networking, and FOSS Security.
-    
+### 1. Network Configuration
 
----
+**VPC & Subnets Created**
+
+> _Verification of the VPC creation with distinct Public and Private subnets._
+>
+> ![VPC Setup](./Assets/ScreenShots/vpc-01.png) > ![Subnet List](./Assets/ScreenShots/subnets.png)
+
+**Route Table Associations**
+
+> _Ensuring public subnets are associated with the Internet Gateway route table._
+>
+> ![Route Tables](./Assets/ScreenShots/routing-table-association.png)
+
+### 2. Security & Compute
+
+**Security Group Rules**
+
+> _Inbound rules configured to allow HTTP (Port 80) from anywhere and SSH (Port 22) for administration._
+>
+> ![Security Group](./Assets/ScreenShots/security-group.png)
+
+**EC2 Instance Summary**
+
+> _The Web Server instance running in the Public Subnet with a valid Public IPv4 address._
+>
+> ![EC2 Summary](./Assets/ScreenShots/ec2-summary.png)
+
+### 3. Final Validation
+
+**Live Web Page Result**
+
+> _Successful HTTP request to the Public IP (`3.110.167.96`), serving the custom HTML page._
+>
+> ![Final Result](./Assets/ScreenShots/result.png)
+
+## ⚠️ Current Limitations & Trade-offs
+
+- **Single NAT Gateway (Cost vs. Redundancy):**
+  - To reduce costs, this architecture uses a **single NAT Gateway** in one Availability Zone.
+  - _Risk:_ If the AZ hosting the NAT Gateway fails, private instances in the _other_ AZ will lose outbound internet access.
+  - _Production Fix:_ Deploy a distinct NAT Gateway in every AZ.
+
+- **Ephemeral Storage:**
+  - The web server stores data on the local EBS root volume. If the instance is terminated, any changes to the website files are lost.
+  - _Production Fix:_ Offload static content to S3 or use an EFS (Elastic File System) mount.
+
+- **Security Groups (SSH):**
+  - For demonstration purposes, SSH (Port 22) might be open to `0.0.0.0/0` or a wide range.
+  - _Risk:_ This exposes the server to brute-force attacks.
+  - _Production Fix:_ Restrict SSH access to a specific VPN IP or use AWS Systems Manager (SSM) Session Manager instead of SSH.
+
+- **Manual Deployment ("ClickOps"):**
+  - Infrastructure was created manually via the AWS Console, increasing the risk of human error and making replication difficult.
+
+- **No Load Balancer:**
+  - The web server is accessed via a direct Public IP. If this instance fails, the site goes down, despite the network being Multi-AZ.
+
+- **HTTP Only:**
+  - Traffic is unencrypted (Port 80). Production environments require SSL/TLS (HTTPS) certificates.
+
+## 🚀 Future Roadmap
+
+The following improvements are planned for the next version (v2.0):
+
+**Infrastructure as Code (IaC):**
+
+- Migrate the entire manual setup to Terraform for automated, reproducible deployment.
+
+**Scalability:**
+
+- Introduce an Application Load Balancer (ALB) to distribute traffic.
+- Implement Auto Scaling Groups (ASG) to automatically recover from instance failures.
+
+**Database:**
+
+- Deploy an RDS instance in the private subnets to create a full 2-Tier architecture.
